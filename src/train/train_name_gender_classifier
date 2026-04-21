@@ -1,0 +1,53 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report, accuracy_score
+import joblib
+
+df = pd.read_csv('data/processed/names_processed.csv')
+
+# Encode categorical: last_letter, last_2, first_letter
+le_last = LabelEncoder()
+le_last2 = LabelEncoder()
+le_first = LabelEncoder()
+
+df['last_letter_enc'] = le_last.fit_transform(df['last_letter'])
+df['last_2_enc'] = le_last2.fit_transform(df['last_2'])
+df['first_letter_enc'] = le_first.fit_transform(df['first_letter'])
+
+feature_cols = ['name_len','last_letter_enc','last_2_enc',
+                'first_letter_enc','vowel_count','ends_in_vowel']
+X = df[feature_cols]
+y = df['gender']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Train multiple models
+models = {
+    'Logistic Regression': LogisticRegression(max_iter=1000),
+    'Random Forest': RandomForestClassifier(n_estimators=200, random_state=42),
+    'Gradient Boosting': GradientBoostingClassifier(n_estimators=200, random_state=42)
+}
+
+best_model = None
+best_score = 0
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    score = accuracy_score(y_test, model.predict(X_test))
+    cv = cross_val_score(model, X, y, cv=5).mean()
+    print(f'{name}: Test={score:.3f}, CV={cv:.3f}')
+    if score > best_score:
+        best_score = score
+        best_model = model
+
+# Save best model
+joblib.dump(best_model, 'models/name_gender_model.pkl')
+joblib.dump({'le_last': le_last, 'le_last2': le_last2, 'le_first': le_first},
+           'models/name_encoders.pkl')
+print(f'\nBest model saved: {best_score:.3f} accuracy')
+
