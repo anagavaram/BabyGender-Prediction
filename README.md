@@ -22,7 +22,6 @@ src/
 data/raw/             — Original datasets
 data/processed/       — Cleaned and transformed data
 models/               — Trained model artifacts (not in git)
-notebooks/            — Jupyter notebooks for EDA
 ```
 
 ## Setup
